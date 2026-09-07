@@ -1,0 +1,35 @@
+name: Daily Stock Update
+
+on:
+  schedule:
+    # 國際標準時間 07:30 = 台灣時間 15:30（週一到週五執行）
+    - cron: '30 7 * * 1-5'
+  workflow_dispatch: # 支援在 GitHub 網頁上手動點按鈕觸發
+
+permissions:
+  contents: write
+
+jobs:
+  update-stock:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 下載專案程式碼
+        uses: actions/checkout@v4
+
+      - name: 設定 Python 環境
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 安裝所需套件
+        run: pip install requests pandas
+
+      - name: 執行爬蟲並產生最新網頁
+        run: python build_page.py
+
+      - name: 自動提交並更新網頁
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto update stock data" && git push)
